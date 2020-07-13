@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>知识图谱</title>
+		<meta name="description" content="" />
+		<meta name="keywords" content="" />
+		<meta name="author" content="" />
+		<link rel="shortcut icon" href="">
+		<script src="http://cdn.bootcss.com/jquery/2.1.4/jquery.min.js"></script>
+		<link href="http://cdn.bootcss.com/bootstrap/3.3.4/css/bootstrap.min.css" rel="stylesheet">
+		<script src="http://cdn.bootcss.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+		<style type="text/css">
+			body {
+				background-color: #9dadc1;
+				padding: 30px 40px;
+				text-align: center;
+			    font-family: OpenSans-Light, PingFang SC, Hiragino Sans GB, Microsoft Yahei, Microsoft Jhenghei, sans-serif;
+			}
+			#indicator {
+				position: absolute; 
+				left: 60px;
+				bottom: 20px;
+			    text-align: left;
+			    color: #f2f2f2;
+			    font-size: 12px;
+			}
+			
+			#indicator>div {
+			    margin-bottom: 4px;
+			}
+			
+			#indicator span {
+			    display: inline-block;
+			    width: 30px;
+			    height: 14px;
+			    position: relative;
+			    top: 2px;
+			    margin-right: 8px;
+			}
+			/*设置节点及边的样式*/
+			.links line {
+				stroke: rgb(240, 240, 240); 
+				stroke-opactity: 0.2;
+			}
+			.links line.inactive {
+			    /*display: none !important;*/
+			    stroke-opacity: 0.3;
+			}
+			.nodes circle {
+				stroke: #fff;
+				stroke-width: 1.5px;
+			}
+			.nodes circle:hover {
+			    cursor: pointer;
+			}
+			.nodes circle.inactive {
+				/* display: none !important; */
+				opacity: 0.3;
+			}
+			.texts text {
+			    display: none;
+			}
+			.texts text:hover {
+			    cursor: pointer;
+			}
+			.texts text.inactive {
+			    /* display: none !important; */
+					opacity: 0.3;
+			}
+			/*mode选项样式*/
+			#mode {
+			    position: absolute;
+			    top: 160px;
+			    left: 60px;
+			}
+			
+			#mode span {
+			    display: inline-block;
+			    border: 1px solid #fff;
+			    color: #fff;
+			    padding: 6px 10px;
+			    border-radius: 4px;
+			    font-size: 14px;
+			    transition: color, background-color .3s;
+			    -o-transition: color, background-color .3s;
+			    -ms-transition: color, background-color .3s;
+			    -moz-transition: color, background-color .3s;
+			    -webkit-transition: color, background-color .3s;
+			}
+			
+			#mode span.active, #mode span:hover {
+			    background-color: #fff;
+			    color: #333;
+			    cursor: pointer;
+			}
+			
+			/*悬浮节点的info样式*/
+			#info {
+			    position: absolute;
+			    bottom: 40px;
+			    right: 30px;
+			    text-align: right;
+			    width: 270px;
+			}
+			#info p {
+			    color: #fff;
+			    font-size: 12px;
+			    margin-top: 0;
+			    margin-bottom: 5px;
+			}
+			#info p span {
+			    color: #888;
+			    margin-right: 10px;
+			}
+			#info h4 {
+			    color: #fff;
+			}
+			/*搜索框样式*/
+			#search input {
+			    position: absolute;
+			    top: 220px;
+			    left: 60px;
+			    color: #fff;
+			    border: none;
+			    outline: none;
+			    box-shadow: none;
+			    width: 200px;
+			    background-color: #666;
+			}
+		</style>
+	</head>
+	<body>
+		<!-- 绘制标题样式 -->
+		<h1 style="color:#fff;font-size:32px;margin-bottom:0px;text-align:center;margin-left:40px;">企业关系图</h1>
+		<!-- 第一个布局 绘制知识图谱主图 -->
+		<div style="text-align: center; position:relative;">
+			<svg width="800" height="600" style="margin-right:80px;margin-bottom:-40px;" id="svg1">
+			</svg>
+			<!-- 绘制图例 -->
+			<div id="indicator">
+		  </div>
+			<!-- 绘制模式选择 -->
+			<div id="mode">
+				<span class="active" style="border-top-right-radius:0;border-bottom-right-radius:0;">节点</span>
+				<span style="border-top-left-radius:0;border-bottom-left-radius:0;position:relative;left:-5px;">文字</span>
+			</div>
+			<!-- 绘制搜索框 -->
+			<div id="search">
+				<input type="text" class="form-control">
+			</div>
+			<!-- 绘制右边显示结果 -->
+			<div id="info">
+				<h4></h4>
+			</div>
+		</div>
+		<!-- 增加D3元素库 -->
+		<script src="js/d3.v4.min.js"></script>
+		<!-- 绘制图例 -->
+		<script type="text/javascript">
+			$(document).ready(function() {
+				//定义svg变量将布局svg1选出来
+				var svg = d3.select("#svg1"), 
+					width = svg.attr("width"), 
+					height = svg.attr("height");
+				//定义name变量制作图标
+				var names = ['企业', '贸易类型', '地区', '国家'];
+				var colors = ['#55ffff', '#aaaaff', '#4e88af', '#ca635f'];
+					
+				//背景颜色设置 补充CSS样式设置字体布局
+				for (var i=0; i < names.length; i++) {
+					$('#indicator').append("<div><span style='background-color:" + colors[i] + "'></span>" + names[i] + "</div>");
+				}
+				//利用d3.forceSimulation()定义关系图 包括设置边link、排斥电荷charge、关系图中心点
+				var simulation = d3.forceSimulation()
+						.force("link", d3.forceLink().id(d => {
+							// console.log(d)
+							return d.id
+						}))
+						.force("charge", d3.forceManyBody())
+						.force("center", d3.forceCenter(width / 2, height / 2))
+						// .force("collision", d3.forceCollide(12)) // 碰撞检测
+				// 图数据
+				var graph
+				let nodes =[]
+				let links = []	 // 存放节点和关系
+				let nodeSet = [] // 存放去重后nodes的id
+				//d3.json获取数据
+				d3.json("data/records.json", function(error, data) {
+					if(error) throw error
+					graph = data
+					console.log(graph[0].p)
+					for (let item of graph) {
+						// console.log(item.p.start instanceof Array)
+						// console.log(item.p)
+						// 重新更改data格式
+						if(nodeSet.indexOf(item.p.start.identity) == -1){
+							nodeSet.push(item.p.start.identity)
+							nodes.push({
+								id: item.p.start.identity,
+								label: item.p.start.labels[0],
+								properties: item.p.start.properties
+							})
+						}
+						if(nodeSet.indexOf(item.p.end.identity) == -1){
+							nodeSet.push(item.p.end.identity)
+							nodes.push({
+								id: item.p.end.identity,
+								label: item.p.end.labels[0],
+								properties: item.p.end.properties
+							})
+						}
+						links.push({
+							source: item.p.segments[0].relationship.start,
+							target: item.p.segments[0].relationship.end,
+							type: item.p.segments[0].relationship.type,
+							properties: item.p.segments[0].relationship.properties
+						})
+					}
+					console.log(nodes)
+					console.log(links)
+					//D3映射数据至HTML中
+					//g用于绘制所有边,selectALL选中所有的line,并绑定数据data(graph.links),enter().append("line")添加元素
+					//数据驱动文档,设置边的粗细
+					var link = svg.append("g").attr("class","links").selectAll("line").data(links).enter()
+					.append("line").attr("stroke-width", function(d) {
+						// 每次访问links的一项数据
+						return 1.5 //所有线宽度均为2
+					});
+					
+					//添加所有的点
+					//selectAll("circle")选中所有的圆并绑定数据,圆的直径为d.size
+					//再定义圆的填充色,同样数据驱动样式,圆没有描边,圆的名字为d.id
+					//call()函数：拖动函数,当拖动开始绑定dragstarted函数，拖动进行和拖动结束也绑定函数
+					var node = svg.append("g").attr("class", "nodes").selectAll("circle").data(nodes).enter()
+					.append("circle").attr("r", function(d) {
+						// 每次访问nodes的一项数据
+						// console.log(d)
+						let size = 15
+						switch(d.label){
+							case 'Enterprise': break;
+							case 'Type': size = 14;break;
+							case 'Region': size = 13;break;
+							default: size=12;break;
+						}
+						return size
+					}).attr("fill", function(d) {
+						let index = 0
+						switch(d.label){
+							case 'Enterprise': break;
+							case 'Type': index = 1;break;
+							case 'Region': index = 2;break;
+							default: index=3;break;
+						}
+						return colors[index]
+					}).attr("stroke", "none").attr("name", function(d) {
+						return d.properties.name;
+					}).attr("id", d => d.id)
+					.call(d3.drag()
+						.on("start", dragstarted)
+						.on("drag", dragged)
+						.on("end", dragended)
+					);
+					
+					//显示所有的文本
+					//设置大小、填充颜色、名字、text()设置文本
+					//attr("text-anchor", "middle")设置文本居中
+					var text = svg.append("g").attr("class", "texts").selectAll("text").data(nodes).enter()
+					.append("text").attr("font-size", function(d) {
+					        return 13;
+					    }).attr("fill", function(d) {
+								let index = 0
+								switch(d.label){
+									case 'Enterprise': break;
+									case 'Type': index = 1;break;
+									case 'Region': index = 2;break;
+									default: index=3;break;
+								}
+								return colors[index];
+					    }).attr('name', function(d) {
+					        return d.properties.name;
+					    }).text(function(d) {
+					        return d.properties.name;
+					    })
+							
+					//圆增加title
+					node.append("title").text(d => d.properties.name)
+					
+					//simulation中ticked数据初始化并生成图形
+					simulation.nodes(nodes).on("tick", ticked);
+						
+					simulation.force("link")
+							.links(links)
+							.distance(d => {//每一边的长度
+								let distance = 10
+								switch(d.source.label){
+									case 'Enterprise': distance += 30;break;
+									case 'Type': distance += 25;break;
+									case 'Region': distance += 20;break;
+									default: distance += 15;break; 
+								}
+								switch(d.target.label){
+									case 'Enterprise': distance += 30;break;
+									case 'Type': distance += 25;break;
+									case 'Region': distance += 20;break;
+									default: distance += 15;break; 
+								}
+								return distance
+							});
+						
+					//ticked()函数确定link线的起始点x、y坐标 node确定中心点 文本通过translate平移变化
+					function ticked() {
+							link
+									.attr("x1", function(d) {
+									    return d.source.x;
+									})
+									.attr("y1", function(d) {
+									    return d.source.y;
+									})
+									.attr("x2", function(d) {
+									    return d.target.x;
+									})
+									.attr("y2", function(d) {
+									    return d.target.y;
+									});
+					
+							node
+									.attr("cx", function(d) {
+											return d.x;
+									})
+									.attr("cy", function(d) {
+											return d.y;
+									});
+					
+							text.attr('transform', function(d) {
+								let size = 15
+								switch(d.label){
+									case 'Enterprise': break;
+									case 'Type': size = 14;break;
+									case 'Region': size = 13;break;
+									default: size = 12;break;
+								}
+								return 'translate(' + (d.x - size / 2) + ',' + (d.y + size / 2) + ')';
+							});
+					}
+				});
+				//拖动函数代码
+				var dragging = false;
+				//开始拖动并更新相应的点
+				function dragstarted(d) {
+				    if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+				    d.fx = d.x;
+				    d.fy = d.y;
+				    //dragging = true;
+				}
+				//拖动进行中
+				function dragged(d) {
+				    d.fx = d3.event.x;
+				    d.fy = d3.event.y;
+				}
+				//拖动结束
+				function dragended(d) {
+				    if (!d3.event.active) simulation.alphaTarget(0);
+				    d.fx = null;
+				    d.fy = null;
+				    //dragging = false;
+				}
+				//span点击事件
+				$('#mode span').click(function(event) {
+					 //span都设置为不激活状态
+					 $('#mode span').removeClass('active');
+					 //点击的span被激活
+					 $(this).addClass('active');
+					 //text隐藏 nodes显示
+					 if ($(this).text() == '节点') {
+							 $('.texts text').hide();
+							 $('.nodes circle').show();
+					 } else {
+							 $('.texts text').show();
+							 $('.nodes circle').hide();
+					 }
+				});
+				//设置鼠标选中节点显示，并循环设置与选中节点相关联的节点显示
+				//为svg1父元素下的.nodes circle元素绑定鼠标进入事件
+				$('#svg1').on('mouseenter', '.nodes circle', function(event) {
+					// console.log(event)
+					//通过变量dragging保证拖动鼠标时，其状态不受影响，从而改变图形
+					//鼠标没有拖动才能处理事件
+					if(!dragging) {
+						//获取被选中元素的名字
+						var name = $(this).attr("name");
+						var id = $(this).attr("id");
+						//设置#info h4样式的颜色为该节点的颜色，文本为该节点name
+						//$(this).attr('fill')表示当前悬浮圆的填充色
+						$('#info h4').css('color', $(this).attr('fill')).text(name);
+						//每次点击添加属性前把上次显示的信息去除，否则会不断叠加
+						$('#info p').remove();
+						//遍历查找id对应的属性
+						for(let item of nodes){
+							if(item.id == id){
+								for(var key in item.properties)
+								//显示值及其字段名字
+								$('#info').append('<p><span>' + key + '</span>' + item.properties[key] + '</p>');
+							}
+						}
+						//选择#svg1 .nodes中所有的circle，再增加个class
+						d3.select('#svg1 .nodes').selectAll('circle').attr('class', function(d) {
+							//数据的id是否等于name,返回空
+							if(d.properties.name == name) {
+								return '';
+							} 
+							//当前节点返回空，否则其他节点循环判断是否被隐藏起来(CSS设置隐藏)
+							else {
+								//links链接的起始节点进行判断,如果其id等于name则显示这类节点
+								//注意: graph=data
+								for (var i = 0; i < links.length; i++) {
+									//如果links的起点等于name，并且终点等于正在处理的则显示
+									if (links[i]['source'].properties.name == name && links[i]['target'].id == d.id) {
+											return '';
+									}
+									if (links[i]['target'].properties.name == name && links[i]['source'].id == d.id) {
+											return '';
+									}
+								}
+								return "inactive"; //前面CSS定义 .nodes circle.inactive
+							}
+						});
+						//处理相邻的边line是否隐藏 注意 || 
+						d3.select("#svg1 .links").selectAll('line').attr('class', function(d) {
+								if (d.source.properties.name == name || d.target.properties.name == name) {
+										return '';
+								} else {
+										return 'inactive';
+								}
+						});
+					}
+				});
+				//鼠标移开还原原图，显示所有隐藏的点及边
+				$('#svg1').on('mouseleave', '.nodes circle', function(event) {
+				    d3.select('#svg1 .nodes').selectAll('circle').attr('class', '');
+				    d3.select('#svg1 .links').selectAll('line').attr('class', '');
+				});
+				//鼠标进入文本显示相邻节点及边
+				$('#svg1').on('mouseenter', '.texts text', function(event) {
+				    if (!dragging) {
+				        var name = $(this).attr('name');
+				
+				        $('#info h4').css('color', $(this).attr('fill')).text(name);
+				        $('#info p').remove();
+				        //遍历查找id对应的属性
+				        for(let item of nodes){
+				        	if(item.properties.name == name){
+				        		for(var key in item.properties)
+											//显示值及其字段名字
+											$('#info').append('<p><span>' + key + '</span>' + item.properties[key] + '</p>');
+				        	}
+				        }
+				
+				        d3.select('#svg1 .texts').selectAll('text').attr('class', function(d) {
+				            if (d.properties.name == name) {
+				                return '';
+				            }
+				
+				            for (var i = 0; i < links.length; i++) {
+				                if (links[i]['source'].properties.name == name && links[i]['target'].id == d.id) {
+				                    return '';
+				                }
+				                if (links[i]['target'].properties.name == name && links[i]['source'].id == d.id) {
+				                    return '';
+				                }
+				            }
+				            return 'inactive';
+				        });
+				        d3.select("#svg1 .links").selectAll('line').attr('class', function(d) {
+				            if (d.source.properties.name == name || d.target.properties.name == name) {
+				                return '';
+				            } else {
+				                return 'inactive';
+				            }
+				        });
+				    }
+				});
+				//鼠标移除文本还原相应节点及边
+				$('#svg1').on('mouseleave', '.texts text', function(event) {
+				    if (!dragging) {
+				        d3.select('#svg1 .texts').selectAll('text').attr('class', '');
+				        d3.select('#svg1 .links').selectAll('line').attr('class', '');
+				    }
+				});
+				//搜索框中输入内容则响应该事件
+				//keyup按键敲击响应event
+				$('#search input').keyup(function(event) {
+					//如果Input值是空的显示所有的圆和线(没有进行筛选)
+				    if ($(this).val() == '') {
+				        d3.select('#svg1 .texts').selectAll('text').attr('class', '');
+				        d3.select('#svg1 .nodes').selectAll('circle').attr('class', '');
+				        d3.select('#svg1 .links').selectAll('line').attr('class', '');
+				    }
+				    //否则判断判断三个元素是否等于name值，等于则显示该值
+				    else {
+				        var name = $(this).val();
+				        //搜索所有的节点
+				        d3.select('#svg1 .nodes').selectAll('circle').attr('class', function(d) {
+										//输入节点id的小写等于name则显示，否则隐藏
+				            if (d.properties.name.indexOf(name) >= 0) {
+				                return '';
+				            } else {
+				            	//优化：与该搜索节点相关联的节点均显示
+				            	//links链接的起始节点进行判断,如果其id等于name则显示这类节点
+											//注意: graph=data
+											for (var i = 0; i < links.length; i++) {
+												//如果links的起点等于name，并且终点等于正在处理的则显示
+												if ((links[i]['source'].properties.name.indexOf(name) >= 0) && 
+													(links[i]['target'].id == d.id)) {
+														return '';
+												}
+												//如果links的终点等于name，并且起点等于正在处理的则显示
+												if ((links[i]['target'].properties.name.indexOf(name) >= 0) && 
+													(links[i]['source'].id == d.id)) {
+														return '';
+												}
+											}
+											return 'inactive'; //隐藏
+				            }
+				        });
+				        //搜索texts
+				        d3.select('#svg1 .texts').selectAll('text').attr('class', function(d) {
+									if (d.properties.name.indexOf(name) >= 0) {
+											return '';
+									} else {
+												//优化：与该搜索节点相关联的节点均显示
+												//links链接的起始节点进行判断,如果其id等于name则显示这类节点
+												//注意: graph=data
+												for (var i = 0; i < links.length; i++) {
+														//如果links的起点等于name，并且终点等于正在处理的则显示
+				                    if ((links[i]['source'].properties.name.indexOf(name) >= 0) && 
+				                    	(links[i]['target'].id == d.id)) {
+				                        return '';
+				                    }
+				                    //如果links的终点等于name，并且起点等于正在处理的则显示
+				                    if ((links[i]['target'].properties.name.indexOf(name) >= 0) && 
+				                    	(links[i]['source'].id == d.id)) {
+				                        return '';
+				                    }
+				                }
+				                return 'inactive';
+				            }
+				        });
+				        //搜索links
+				        //显示相的邻边 注意 || 
+				        //name=$(this).val()：名字为键盘输入的内容
+				        d3.select("#svg1 .links").selectAll('line').attr('class', function(d) {
+				        	if ((d.source.properties.name.indexOf(name) >= 0) || 
+				        		(d.target.properties.name.indexOf(name) >= 0) 
+				        		) {
+				                return '';
+				            } else {
+				                return 'inactive'; //隐藏
+				            }
+				        });
+				    }
+				});
+			});
+		</script>
+	</body>
+</html>
