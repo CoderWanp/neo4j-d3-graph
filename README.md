@@ -8,5 +8,7 @@
 - 点击节点、文字切换显示
 - 加入了碰撞检测模型，已注释，取消即可与效果图相同
 
-![效果图](img/pic.png)
+![效果图](./img/pic.png)
 
+效果展示：
+[https://coderwanp.github.io/neo4j-d3-graph/](https://coderwanp.github.io/neo4j-d3-graph/)
