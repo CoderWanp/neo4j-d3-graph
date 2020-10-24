@@ -181,7 +181,7 @@
 						}))
 						.force("charge", d3.forceManyBody())
 						.force("center", d3.forceCenter(width / 2, height / 2))
-						// .force("collision", d3.forceCollide(12)) // 碰撞检测
+						.force("collision", d3.forceCollide(12)) // 碰撞检测
 				// 图数据
 				var graph
 				let nodes =[]
