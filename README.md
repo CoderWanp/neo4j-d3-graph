@@ -49,5 +49,5 @@ var url = 'data/records.json'
 
 如果你从Neo4j导出的 `records.json` 中关系路径长度大于1，如下图这种情况会导致节点全部移至左上角。**现在已经修改完毕，支持长距离路径的图，只要满足JSON格式要求，即可进行可视化展示。**
 
-![image-20210401170404874](img\json.png)
+![image-20210401170404874](img/json.png)
 
