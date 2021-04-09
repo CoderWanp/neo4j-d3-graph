@@ -148,21 +148,6 @@
 							for (let i = 0;i < labels.length;i++) {
 								if (d.label === labels[i]) return colors[i]
 							}
-							// let index = 0
-							// switch (d.label) {
-							// 	case labels[0]:
-							// 		break;
-							// 	case labels[1]:
-							// 		index = 1;
-							// 		break;
-							// 	case labels[2]:
-							// 		index = 2;
-							// 		break;
-							// 	default:
-							// 		index = 3;
-							// 		break;
-							// }
-							// return colors[index]
 						}).attr("stroke", "none").attr("name", function(d) {
 							return d.properties.name;
 						}).attr("id", d => d.id)
@@ -182,21 +167,6 @@
 							for (let i = 0;i < labels.length;i++) {
 								if (d.label === labels[i]) return colors[i]
 							}
-							// let index = 0
-							// switch (d.label) {
-							// 	case labels[0]:
-							// 		break;
-							// 	case labels[1]:
-							// 		index = 1;
-							// 		break;
-							// 	case labels[2]:
-							// 		index = 2;
-							// 		break;
-							// 	default:
-							// 		index = 3;
-							// 		break;
-							// }
-							// return colors[index];
 						}).attr('name', function(d) {
 							return d.properties.name;
 						}).text(function(d) {
