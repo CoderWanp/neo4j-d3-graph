@@ -258,11 +258,13 @@
 					}
 				});
 				// 拖动函数代码
+				var dragging = false;
 				// 开始拖动并更新相应的点
 				function dragstarted(d) {
 					if (!d3.event.active) simulation.alphaTarget(0.3).restart();
 					d.fx = d.x;
 					d.fy = d.y;
+					dragging = true;
 				}
 				// 拖动进行中
 				function dragged(d) {
@@ -274,6 +276,7 @@
 					if (!d3.event.active) simulation.alphaTarget(0);
 					// d.fx = null;
 					// d.fy = null;
+					dragging = false;
 				}
 				// span点击事件
 				$('#mode span').click(function(event) {
