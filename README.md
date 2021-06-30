@@ -15,6 +15,12 @@
 
 # 代码使用说明
 
+## 关于启动服务
+
+由于知识图谱的JSON文件加载是通过AJAX请求过来，所以直接打开html文件会报**跨域错误**。
+
+正确的启动方法是通过IDE软件以项目形式打开文件夹，比如：HBuildX、PyCharm、VSCode、IDEA等，很多启动都自带服务，此时通过 `localhost:端口号` 访问 `index.html` 即可查看效果。
+
 ## JSON格式要求
 
 以 **p** 为键值对表示，每个 **p** 为一个查询关系。
@@ -58,4 +64,33 @@ var url = 'data/records.json'
 多图例情况：（热心网友提供的数据，所以打个码）
 
 ![多图例情况](./img/多图例情况.png)
+
+## 2021.06.30
+
+关于力导向拖拽的代码，确实文档没有说明清楚，在 `vue-d3-graph` 的项目是拖拽后固定不动，这个项目现改为拖拽后回弹，如果想要固定的效果注释 `dragended` 的代码即可。
+
+```js
+// 拖动函数代码
+var dragging = false;
+// 开始拖动并更新相应的点
+function dragstarted(d) {
+    if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+    d.fx = d.x;
+    d.fy = d.y;
+    dragging = true;
+}
+// 拖动进行中
+function dragged(d) {
+    d.fx = d3.event.x;
+    d.fy = d3.event.y;
+}
+// 拖动结束
+function dragended(d) {
+    if (!d3.event.active) simulation.alphaTarget(0);
+    // 注释以下两行，拖拽后节点固定不动
+    // d.fx = null;
+    // d.fy = null;
+    dragging = false;
+}
+```
 

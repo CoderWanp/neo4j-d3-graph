@@ -274,8 +274,8 @@
 				// 拖动结束
 				function dragended(d) {
 					if (!d3.event.active) simulation.alphaTarget(0);
-					// d.fx = null;
-					// d.fy = null;
+					d.fx = null;
+					d.fy = null;
 					dragging = false;
 				}
 				// span点击事件
